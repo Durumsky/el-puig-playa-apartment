@@ -35,11 +35,75 @@ const masonryGrids = document.querySelectorAll(".masonry");
 
 let currentIndex = 0;
 
+function resetMasonryGrid(grid) {
+  grid.classList.remove("masonry--enhanced");
+  grid.style.height = "";
+
+  grid.querySelectorAll(".masonry__item").forEach((item) => {
+    item.style.left = "";
+    item.style.top = "";
+    item.style.width = "";
+    item.style.height = "";
+  });
+}
+
+function getMasonryColumns() {
+  if (window.innerWidth <= 640) {
+    return 0;
+  }
+
+  if (window.innerWidth <= 960) {
+    return 2;
+  }
+
+  return 3;
+}
+
+function layoutMasonryGrid(grid) {
+  const columns = getMasonryColumns();
+  const items = [...grid.querySelectorAll(".masonry__item")];
+
+  if (!items.length || columns === 0) {
+    resetMasonryGrid(grid);
+    return;
+  }
+
+  const styles = window.getComputedStyle(grid);
+  const gap = Number.parseFloat(styles.gap) || 0;
+  const gridWidth = grid.clientWidth;
+  const columnWidth = (gridWidth - gap * (columns - 1)) / columns;
+  const columnHeights = new Array(columns).fill(0);
+
+  grid.classList.add("masonry--enhanced");
+
+  items.forEach((item) => {
+    const image = item.querySelector("img");
+
+    if (!image || !image.complete || image.naturalWidth === 0) {
+      return;
+    }
+
+    const naturalRatio = image.naturalHeight / image.naturalWidth;
+    const clampedRatio = Math.min(1.45, Math.max(0.78, naturalRatio));
+    const itemHeight = columnWidth * clampedRatio;
+    const shortestColumn = columnHeights.indexOf(Math.min(...columnHeights));
+    const left = shortestColumn * (columnWidth + gap);
+    const top = columnHeights[shortestColumn];
+
+    item.style.width = `${columnWidth}px`;
+    item.style.height = `${itemHeight}px`;
+    item.style.left = `${left}px`;
+    item.style.top = `${top}px`;
+
+    columnHeights[shortestColumn] += itemHeight + gap;
+  });
+
+  grid.style.height = `${Math.max(...columnHeights) - gap}px`;
+}
+
 function applyGalleryLayouts() {
   masonryGrids.forEach((grid) => {
-    const items = grid.querySelectorAll(".masonry__item");
-    const count = items.length;
-    grid.dataset.layout = String(Math.min(count, 5));
+    layoutMasonryGrid(grid);
   });
 }
 
@@ -113,4 +177,13 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+galleryButtons.forEach((button) => {
+  const image = button.querySelector("img");
+
+  if (image && !image.complete) {
+    image.addEventListener("load", applyGalleryLayouts, { once: true });
+  }
+});
+
 window.addEventListener("load", applyGalleryLayouts);
+window.addEventListener("resize", applyGalleryLayouts);

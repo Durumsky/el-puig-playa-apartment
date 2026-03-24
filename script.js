@@ -35,32 +35,11 @@ const masonryGrids = document.querySelectorAll(".masonry");
 
 let currentIndex = 0;
 
-function resizeMasonryItem(grid, item) {
-  const image = item.querySelector("img");
-
-  if (!image || !image.complete || image.naturalWidth === 0) {
-    return;
-  }
-
-  const styles = window.getComputedStyle(grid);
-  const rowGap = Number.parseFloat(styles.rowGap);
-  const rowHeight = Number.parseFloat(styles.gridAutoRows);
-
-  if (!rowGap || !rowHeight) {
-    return;
-  }
-
-  const width = item.getBoundingClientRect().width;
-  const height = (image.naturalHeight / image.naturalWidth) * width;
-  const rowSpan = Math.ceil((height + rowGap) / (rowHeight + rowGap));
-
-  item.style.gridRowEnd = `span ${rowSpan}`;
-}
-
-function layoutMasonry() {
+function applyGalleryLayouts() {
   masonryGrids.forEach((grid) => {
     const items = grid.querySelectorAll(".masonry__item");
-    items.forEach((item) => resizeMasonryItem(grid, item));
+    const count = items.length;
+    grid.dataset.layout = String(Math.min(count, 5));
   });
 }
 
@@ -94,16 +73,6 @@ function stepPhoto(direction) {
 }
 
 galleryButtons.forEach((button) => {
-  const image = button.querySelector("img");
-
-  if (image) {
-    if (image.complete) {
-      layoutMasonry();
-    } else {
-      image.addEventListener("load", layoutMasonry, { once: true });
-    }
-  }
-
   button.addEventListener("click", () => {
     openLightbox(Number(button.dataset.index));
   });
@@ -144,5 +113,4 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-window.addEventListener("load", layoutMasonry);
-window.addEventListener("resize", layoutMasonry);
+window.addEventListener("load", applyGalleryLayouts);
